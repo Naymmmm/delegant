@@ -1,73 +1,64 @@
-# React + TypeScript + Vite
+# Delegant
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Delegant is a powerful desktop application that gives an AI agent full access to your computer to automate tasks on your behalf. The agent can click, type, access files, and navigate the web autonomously based on your instructions.
 
-Currently, two official plugins are available:
+Built as a lightweight desktop assistant, Delegant features a sleek, unobtrusive "Taskbar" interface alongside a robust Setup Wizard, making it easy to delegate complex workflows to an AI.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+> **⚠️ Disclaimer:** Delegant provides an AI model with **full access to your device**. Use with caution. If the agent misbehaves or gets stuck, press **CTRL+ALT+DEL** or close the application immediately to suppress the agent.
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Framework:** [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
+- **Build Tool:** [Vite](https://vitejs.dev/)
+- **Desktop Runtime:** [Tauri](https://tauri.app/) (v2)
+- **State Management:** [Zustand](https://github.com/pmndrs/zustand)
+- **Styling:** [Tailwind CSS 4](https://tailwindcss.com/)
+- **Icons:** [Lucide React](https://lucide.dev/)
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Prerequisites
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Ensure you have the required dependencies for Tauri development on your operating system:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- [Tauri Prerequisites](https://tauri.app/v1/guides/getting-started/prerequisites) (Node.js, Rust, and OS-specific build tools)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Installation
+
+1. Clone the repository:
+
+   ```bash
+   git clone <repository-url>
+   cd delegant
+   ```
+
+2. Install dependencies:
+
+   ```bash
+   pnpm install
+   ```
+
+3. Run the development server (starts both Vite and the Tauri window):
+
+   ```bash
+   pnpm run tauri dev
+   ```
+
+### Building for Production
+
+To build a production executable:
+
+```bash
+cargo tauri build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The resulting binaries will be located in `src-tauri/target/release/`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Architecture Overview
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- `src/`: The React frontend, including components such as the Taskbar, Settings Wizard, Start Screen, and global Zustand stores.
+- `src-tauri/`: The Rust backend responsible for integrating system-level events, executing actions, and acting as the bridge for the AI agent.
+
+## License
+
+MIT
