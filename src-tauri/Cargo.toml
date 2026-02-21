@@ -1,0 +1,46 @@
+[package]
+name = "delegant"
+version = "0.1.0"
+description = "AI Agent Desktop Controller"
+authors = ["you"]
+license = "MIT"
+repository = ""
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-store = "2"
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+log = "0.4"
+tauri-plugin-log = "2"
+xcap = "0.2"
+enigo = "0.6"
+image = "0.25"
+reqwest = { version = "0.12", features = ["json"] }
+base64 = "0.22"
+tokio = { version = "1", features = ["full"] }
+tokio-util = "0.7"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4"] }
+thiserror = "2"
+async-trait = "0.1"
+windows = { version = "0.58", features = [
+  "Win32_Foundation",
+  "Win32_UI_WindowsAndMessaging",
+  "Win32_Graphics_Dwm",
+] }
+uiautomation = "0.24.3"
+imageproc = "0.25.0"
+ab_glyph = "0.2"
+arboard = "3.6.1"
+rand = "0.9.2"

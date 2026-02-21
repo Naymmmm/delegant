@@ -1,0 +1,21 @@
+    Checking computer-use v0.1.0 (D:\Repos\computer-use\src-tauri)
+error[E0308]: mismatched types
+  --> src\screen\a11y.rs:26:23
+   |
+26 |             if pid == my_pid {
+   |                       ^^^^^^ expected `u32`, found `i32`
+
+error[E0277]: can't compare `u32` with `i32`
+  --> src\screen\a11y.rs:26:20
+   |
+26 |             if pid == my_pid {
+   |                    ^^ no implementation for `u32 == i32`
+   |
+   = help: the trait `PartialEq<i32>` is not implemented for `u32`
+   = help: the following other types implement trait `PartialEq<Rhs>`:
+             `u32` implements `PartialEq<JsonValue>`
+             `u32` implements `PartialEq`
+
+Some errors have detailed explanations: E0277, E0308.
+For more information about an error, try `rustc --explain E0277`.
+error: could not compile `computer-use` (lib) due to 2 previous errors

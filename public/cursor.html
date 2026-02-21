@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cursor Overlay</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: transparent;
+        pointer-events: none;
+      }
+      #cursor {
+        position: fixed;
+        pointer-events: none;
+        z-index: 999999;
+        display: none;
+        filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.4));
+        transition:
+          left 0.06s cubic-bezier(0.22, 1, 0.36, 1),
+          top 0.06s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      #ripple {
+        position: fixed;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: rgba(59, 130, 246, 0.3);
+        pointer-events: none;
+        z-index: 999998;
+        display: none;
+        transform: translate(-50%, -50%) scale(0);
+      }
+      #ripple.active {
+        display: block;
+        animation: click-ripple 0.45s ease-out forwards;
+      }
+      @keyframes click-ripple {
+        0% {
+          transform: translate(-50%, -50%) scale(0);
+          opacity: 1;
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(3);
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Blue Figma-style cursor -->
+    <svg
+      id="cursor"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      style="left: 0px; top: 0px"
+    >
+      <path
+        d="M5.65 1.65l12.7 9.6-5.9 1.05-3.2 8.3z"
+        fill="#3b82f6"
+        stroke="#ffffff"
+        stroke-width="1.5"
+        stroke-linejoin="round"
+      />
+    </svg>
+    <div id="ripple"></div>
+    <script>
+      function init() {
+        if (window.__TAURI__) {
+          const { listen } = window.__TAURI__.event;
+          const cursor = document.getElementById("cursor");
+          const ripple = document.getElementById("ripple");
+          let lastX = 0,
+            lastY = 0;
+
+          listen("cursor-moved", (event) => {
+            const { x, y } = event.payload;
+            lastX = x;
+            lastY = y;
+            cursor.style.display = "block";
+            cursor.style.left = x + "px";
+            cursor.style.top = y + "px";
+          });
+
+          listen("cursor-click", (event) => {
+            const { x, y } = event.payload;
+            ripple.style.left = x + "px";
+            ripple.style.top = y + "px";
+            ripple.classList.remove("active");
+            void ripple.offsetWidth; // force reflow
+            ripple.classList.add("active");
+          });
+
+          listen("cursor-hide", () => {
+            cursor.style.display = "none";
+          });
+        } else {
+          setTimeout(init, 100);
+        }
+      }
+      init();
+    </script>
+  </body>
+</html>

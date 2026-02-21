@@ -1,0 +1,48 @@
+    Checking computer-use v0.1.0 (D:\Repos\computer-use\src-tauri)
+error[E0277]: the trait bound `ab_glyph::scale::PxScale: From<Scale>` is not satisfied
+  --> src\screen\capture.rs:73:25
+   |
+68 |                     imageproc::drawing::draw_text_mut(
+   |                     --------------------------------- required by a bound introduced by this call
+...
+73 |                         scale,
+   |                         ^^^^^ the trait `From<Scale>` is not implemented for `ab_glyph::scale::PxScale`
+   |
+   = help: the trait `From<Scale>` is not implemented for `ab_glyph::scale::PxScale`
+           but trait `From<f32>` is implemented for it
+   = help: for that trait implementation, expected `f32`, found `Scale`
+   = note: required for `Scale` to implement `Into<ab_glyph::scale::PxScale>`
+note: required by a bound in `draw_text_mut`
+  --> C:\Users\UwUor\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\imageproc-0.25.0\src\drawing\text.rs:56:17
+   |
+51 | pub fn draw_text_mut<C>(
+   |        ------------- required by a bound in this function
+...
+56 |     scale: impl Into<PxScale> + Copy,
+   |                 ^^^^^^^^^^^^^ required by this bound in `draw_text_mut`
+
+error[E0277]: the trait bound `rusttype::Font<'_>: ab_glyph::font::Font` is not satisfied
+  --> src\screen\capture.rs:74:25
+   |
+68 |                     imageproc::drawing::draw_text_mut(
+   |                     --------------------------------- required by a bound introduced by this call
+...
+74 |                         &font,
+   |                         ^^^^^ the trait `ab_glyph::font::Font` is not implemented for `rusttype::Font<'_>`
+   |
+   = help: the following other types implement trait `ab_glyph::font::Font`:
+             &F
+             ab_glyph::font_arc::FontArc
+             ab_glyph::ttfp::FontRef<'_>
+             ab_glyph::ttfp::FontVec
+note: required by a bound in `draw_text_mut`
+  --> C:\Users\UwUor\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\imageproc-0.25.0\src\drawing\text.rs:57:17
+   |
+51 | pub fn draw_text_mut<C>(
+   |        ------------- required by a bound in this function
+...
+57 |     font: &impl Font,
+   |                 ^^^^ required by this bound in `draw_text_mut`
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `computer-use` (lib) due to 2 previous errors
