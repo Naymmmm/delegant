@@ -19,6 +19,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "366ffbaa4442f4684d91e2cd7c5ea7c4ed8add41959a31447066e279e432b618"
 
 [[package]]
+name = "accessibility-sys"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf09354dda54177da27bcb8b9b83d8cab947db1dc1538a310a5e9da1c57fd4c2"
+dependencies = [
+ "core-foundation-sys",
+]
+
+[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -858,6 +867,7 @@ name = "delegant"
 version = "0.1.0"
 dependencies = [
  "ab_glyph",
+ "accessibility-sys",
  "arboard",
  "async-trait",
  "base64 0.22.1",

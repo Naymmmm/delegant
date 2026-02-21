@@ -112,6 +112,24 @@ fn build_openai_tools(display_width: u32, display_height: u32) -> Vec<ToolDefini
             display_number: None,
         },
         ToolDefinition {
+            name: "get_element_position".to_string(),
+            tool_type: None,
+            description: Some("Get the bounding box coordinates [left, top, right, bottom] and calculated center [cx, cy] of an element ID found in the Accessibility Tree.".to_string()),
+            input_schema: Some(json!({
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "The element ID from the Accessibility Tree"
+                    }
+                },
+                "required": ["id"]
+            })),
+            display_width_px: None,
+            display_height_px: None,
+            display_number: None,
+        },
+        ToolDefinition {
             name: "bash".to_string(),
             tool_type: None,
             description: Some("Execute a shell command (Windows cmd/powershell) and return stdout/stderr. Use for file operations, installations, or when CLI is faster than GUI.".to_string()),

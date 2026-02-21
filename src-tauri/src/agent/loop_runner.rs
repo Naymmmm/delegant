@@ -15,7 +15,7 @@ use crate::ai::types::{AiResponse, ContentBlock, ImageSource, Message};
 use crate::error::AppResult;
 use crate::state::{AgentState, Settings};
 
-const SYSTEM_PROMPT: &str = r#"You are an AI agent that controls a computer to accomplish tasks. You can see the screen via screenshots and perform actions using the available tools.
+const SYSTEM_PROMPT: &str = r#"You are an AI agent running on Delegant that controls a computer to accomplish tasks. You can see the screen via screenshots and perform actions using the available tools.
 
 IMPORTANT GUIDELINES:
 - Always take a screenshot first to see the current state of the screen before acting.
@@ -170,6 +170,38 @@ pub async fn run_agent_loop(
                             continue;
                         }
                     };
+
+                    // Handle get_element_position early to prevent it from going to execute_action
+                    if name.as_str() == "get_element_position" {
+                        let elem_id = input["id"].as_i64().unwrap_or(-1) as i32;
+                        let mut found = false;
+
+                        if let Some(nodes) = &last_nodes {
+                            if let Some(node) = nodes.iter().find(|n| n.id == elem_id) {
+                                let (x, y, r, b) = node.rect;
+                                let cx = x + (r - x) / 2;
+                                let cy = y + (b - y) / 2;
+                                tool_results.push(ContentBlock::ToolResult {
+                                    tool_use_id: id.clone(),
+                                    content: format!("Element ID {} position:\nBounding Box: [left: {}, top: {}, right: {}, bottom: {}]\nCenter: [cx: {}, cy: {}]", elem_id, x, y, r, b, cx, cy),
+                                    is_error: None,
+                                });
+                                found = true;
+                            }
+                        }
+
+                        if !found {
+                            tool_results.push(ContentBlock::ToolResult {
+                                tool_use_id: id.clone(),
+                                content: format!("Error: Element [{}] not found in the current accessibility tree. Take a screenshot first.", elem_id),
+                                is_error: Some(true),
+                            });
+                        }
+
+                        // Delay and continue loop, bypassing standard execute_action
+                        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                        continue;
+                    }
 
                     // Translate click_element by ID into LeftClick coordinates
                     if let AgentAction::ClickElement { id: elem_id } = action {

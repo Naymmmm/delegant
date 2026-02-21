@@ -1,5 +1,5 @@
 use crate::error::AppResult;
-use crate::platform::windows::{enumerate_windows, focus_window as focus_win, WindowInfo};
+use crate::platform::{enumerate_windows, focus_window as focus_win, WindowInfo};
 
 #[tauri::command]
 pub async fn list_windows() -> AppResult<Vec<WindowInfo>> {

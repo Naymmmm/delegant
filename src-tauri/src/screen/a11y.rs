@@ -1,5 +1,4 @@
 use std::error::Error;
-use uiautomation::core::UIAutomation;
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct A11yNode {
@@ -9,7 +8,9 @@ pub struct A11yNode {
     pub rect: (i32, i32, i32, i32), // x, y, width, height (or left, top, right, bottom)
 }
 
+#[cfg(target_os = "windows")]
 pub fn get_a11y_tree() -> Result<Vec<A11yNode>, Box<dyn Error>> {
+    use uiautomation::core::UIAutomation;
     let automation = UIAutomation::new()?;
     let walker = automation.get_control_view_walker()?;
     let root = automation.get_root_element()?;
@@ -91,4 +92,17 @@ pub fn get_a11y_tree() -> Result<Vec<A11yNode>, Box<dyn Error>> {
     }
 
     Ok(nodes)
+}
+
+#[cfg(target_os = "macos")]
+pub fn get_a11y_tree() -> Result<Vec<A11yNode>, Box<dyn Error>> {
+    // macOS accessibility requires accessibility-sys and dropping to CoreFoundation/Objective-C.
+    // For now, return a stub.
+    let nodes = Vec::new();
+    Ok(nodes)
+}
+
+#[cfg(target_os = "linux")]
+pub fn get_a11y_tree() -> Result<Vec<A11yNode>, Box<dyn Error>> {
+    Ok(Vec::new())
 }

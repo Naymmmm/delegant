@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Delegant",
   "version": "0.1.0",
-  "identifier": "com.delegant.app",
+  "identifier": "com.delegantapp",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",

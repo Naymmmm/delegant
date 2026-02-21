@@ -10,6 +10,7 @@ import { Taskbar } from "./components/Taskbar";
 import { TaskbarExpanded } from "./components/TaskbarExpanded";
 import { SetupWizard } from "./components/SetupWizard";
 import { ToastContainer } from "./components/Toast";
+import { type } from "@tauri-apps/plugin-os";
 import "./index.css";
 
 function App() {
@@ -35,6 +36,19 @@ function App() {
   // Load settings on mount
   useEffect(() => {
     loadSettings();
+  }, []);
+
+  // Check for Linux and Warn
+  useEffect(() => {
+    async function checkOs() {
+      if (type() === "linux") {
+        addToast(
+          "Accessibility is not supported on Linux. Experience will be degraded.",
+          "error",
+        );
+      }
+    }
+    checkOs();
   }, []);
 
   // Listen to backend events
