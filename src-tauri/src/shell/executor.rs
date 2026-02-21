@@ -16,12 +16,14 @@ pub async fn run_command(cmd: &str, timeout_secs: u64) -> AppResult<ShellResult>
             .args(["-NoProfile", "-Command", cmd])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
+            .kill_on_drop(true)
             .spawn()?
     } else {
         Command::new("bash")
             .args(["-c", cmd])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
+            .kill_on_drop(true)
             .spawn()?
     };
 
@@ -30,7 +32,12 @@ pub async fn run_command(cmd: &str, timeout_secs: u64) -> AppResult<ShellResult>
         child.wait_with_output(),
     )
     .await
-    .map_err(|_| AppError::Shell(format!("Command timed out after {}s: {}", timeout_secs, cmd)))?
+    .map_err(|_| {
+        AppError::Shell(format!(
+            "Command timed out after {}s: {}",
+            timeout_secs, cmd
+        ))
+    })?
     .map_err(|e| AppError::Shell(e.to_string()))?;
 
     let stdout = String::from_utf8_lossy(&result.stdout).to_string();

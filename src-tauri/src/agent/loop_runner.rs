@@ -84,18 +84,26 @@ pub async fn run_agent_loop(
         // Send to AI
         let _ = app.emit("agent-thinking", json!({"text": "Thinking..."}));
 
-        let response: AiResponse = match s.provider.as_str() {
-            "openai" => {
-                let client = OpenAiClient::new(&s.openai_api_key, &s.model);
-                client.send(SYSTEM_PROMPT, &messages, &tools).await?
-            }
-            "openrouter" => {
-                let client = OpenRouterClient::new(&s.openrouter_api_key, &s.model);
-                client.send(SYSTEM_PROMPT, &messages, &tools).await?
-            }
-            _ => {
-                let client = AnthropicClient::new(&s.anthropic_api_key, &s.model);
-                client.send(SYSTEM_PROMPT, &messages, &tools).await?
+        let response: AiResponse = tokio::select! {
+            res = async {
+                match s.provider.as_str() {
+                    "openai" => {
+                        let client = OpenAiClient::new(&s.openai_api_key, &s.model);
+                        client.send(SYSTEM_PROMPT, &messages, &tools).await
+                    }
+                    "openrouter" => {
+                        let client = OpenRouterClient::new(&s.openrouter_api_key, &s.model);
+                        client.send(SYSTEM_PROMPT, &messages, &tools).await
+                    }
+                    _ => {
+                        let client = AnthropicClient::new(&s.anthropic_api_key, &s.model);
+                        client.send(SYSTEM_PROMPT, &messages, &tools).await
+                    }
+                }
+            } => res?,
+            _ = cancel_token.cancelled() => {
+                hide_cursor_overlay(&app);
+                return Ok(());
             }
         };
 
@@ -263,7 +271,16 @@ pub async fn run_agent_loop(
                     let max_w = settings.read().await.display_width;
                     let max_h = settings.read().await.display_height;
 
-                    match execute_action(&action, max_w, max_h, shell_timeout).await {
+                    let action_result = tokio::select! {
+                        res = execute_action(&action, max_w, max_h, shell_timeout) => res,
+                        _ = cancel_token.cancelled() => {
+                            // If cancelled during execution, bail out immediately
+                            hide_cursor_overlay(&app);
+                            return Ok(());
+                        }
+                    };
+
+                    match action_result {
                         Ok(result) => {
                             if let Some(nodes) = result.nodes {
                                 last_nodes = Some(nodes.clone());
