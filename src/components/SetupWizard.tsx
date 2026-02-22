@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { clsx } from "clsx";
 import { useSettingsStore } from "../stores/settingsStore";
-import { PROVIDERS, MODELS, fetchModels } from "../lib/types";
+import { PROVIDERS, MODELS, fetchModelsDetailed } from "../lib/types";
 import { Spinner } from "./Spinner";
 
 const STEPS = ["Welcome", "Provider", "API Key", "Display", "Ready"] as const;
@@ -19,6 +19,7 @@ const providerDescriptions: Record<string, string> = {
   anthropic: "Claude models with native computer use",
   openai: "GPT-4.1 and o-series with vision",
   openrouter: "Access many models via one API key",
+  ollama: "Run local models via Ollama",
 };
 
 export function SetupWizard({ onComplete }: { onComplete: () => void }) {
@@ -66,6 +67,7 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
   const getApiKeyForProvider = () => {
     if (settings.provider === "anthropic") return settings.anthropic_api_key;
     if (settings.provider === "openrouter") return settings.openrouter_api_key;
+    if (settings.provider === "ollama") return settings.ollama_api_key;
     return settings.openai_api_key;
   };
 
@@ -74,6 +76,8 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
       updateSettings({ anthropic_api_key: value });
     else if (settings.provider === "openrouter")
       updateSettings({ openrouter_api_key: value });
+    else if (settings.provider === "ollama")
+      updateSettings({ ollama_api_key: value });
     else updateSettings({ openai_api_key: value });
   };
 
@@ -83,8 +87,12 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
 
     const key = getApiKeyForProvider();
     try {
-      const models = await fetchModels(settings.provider, key);
-      if (models && models.length > 0) {
+      const result = await fetchModelsDetailed(
+        settings.provider,
+        key,
+        settings.ollama_base_url,
+      );
+      if (!result.hadError && result.models.length > 0) {
         setTestResult("success");
       } else {
         setTestResult("error");
@@ -97,7 +105,10 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
   };
 
   const canProceed = () => {
-    if (step === 2) return getApiKeyForProvider().length > 10;
+    if (step === 2) {
+      if (settings.provider === "ollama") return true;
+      return getApiKeyForProvider().length > 10;
+    }
     if (step === 3)
       return settings.display_width > 0 && settings.display_height > 0;
     return true;
@@ -198,13 +209,27 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
         {step === 2 && (
           <div className="flex flex-col items-center">
             <h2 className="text-xl font-semibold text-white mb-1">
-              Enter API Key
+              {settings.provider === "ollama"
+                ? "Connect to Ollama"
+                : "Enter API Key"}
             </h2>
             <p className="text-zinc-500 text-sm mb-6">
-              Your {PROVIDERS.find((p) => p.id === settings.provider)?.label}{" "}
-              API key
+              {settings.provider === "ollama"
+                ? "Use a local Ollama server (key optional)"
+                : `Your ${PROVIDERS.find((p) => p.id === settings.provider)?.label} API key`}
             </p>
             <div className="w-full space-y-4">
+              {settings.provider === "ollama" && (
+                <input
+                  type="text"
+                  value={settings.ollama_base_url}
+                  onChange={(e) =>
+                    updateSettings({ ollama_base_url: e.target.value })
+                  }
+                  placeholder="http://127.0.0.1:11434"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 input-glow"
+                />
+              )}
               <div className="relative">
                 <input
                   type={showKey ? "text" : "password"}
@@ -215,6 +240,8 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
                       ? "sk-ant-..."
                       : settings.provider === "openrouter"
                         ? "sk-or-..."
+                        : settings.provider === "ollama"
+                          ? "Optional (leave empty for local Ollama)"
                         : "sk-..."
                   }
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 pr-10 input-glow"
@@ -234,10 +261,14 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
               </div>
               <button
                 onClick={testConnection}
-                disabled={testing || !getApiKeyForProvider()}
+                disabled={
+                  testing ||
+                  (!getApiKeyForProvider() && settings.provider !== "ollama")
+                }
                 className={clsx(
                   "w-full py-2.5 rounded-xl text-sm font-medium transition-all btn-press",
-                  testing || !getApiKeyForProvider()
+                  testing ||
+                    (!getApiKeyForProvider() && settings.provider !== "ollama")
                     ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
                     : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700",
                 )}
@@ -254,12 +285,14 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
               {testResult === "success" && (
                 <p className="text-green-400 text-sm text-center flex items-center justify-center gap-1.5">
                   <CheckCircle className="w-4 h-4" />
-                  Key looks valid
+                  {settings.provider === "ollama"
+                    ? "Connection works"
+                    : "Key looks valid"}
                 </p>
               )}
               {testResult === "error" && (
                 <p className="text-red-400 text-sm text-center">
-                  Key validation failed. Please check your key and try again.
+                  Network issue, check your API key or routing
                 </p>
               )}
             </div>

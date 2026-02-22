@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { X, Eye, EyeOff, RotateCcw, Search, Loader2 } from "lucide-react";
 import { useSettingsStore } from "../stores/settingsStore";
-import { PROVIDERS, MODELS, fetchModels } from "../lib/types";
+import { PROVIDERS, MODELS, fetchModelsDetailed } from "../lib/types";
 
 export function SettingsModal() {
   const { settings, updateSettings, saveSettings, setShowModal, resetWizard } =
@@ -12,6 +12,7 @@ export function SettingsModal() {
   );
   const [loadingModels, setLoadingModels] = useState(false);
   const [modelSearch, setModelSearch] = useState("");
+  const [modelsError, setModelsError] = useState(false);
 
   // Fetch models dynamically when provider or key changes
   useEffect(() => {
@@ -20,20 +21,26 @@ export function SettingsModal() {
         ? settings.anthropic_api_key
         : settings.provider === "openrouter"
           ? settings.openrouter_api_key
-          : settings.openai_api_key;
-    setDynamicModels(MODELS[settings.provider] ?? []);
+          : settings.provider === "ollama"
+            ? settings.ollama_api_key
+            : settings.openai_api_key;
+    setDynamicModels([]);
     setModelSearch("");
-    if (key) {
-      setLoadingModels(true);
-      fetchModels(settings.provider, key)
-        .then(setDynamicModels)
-        .finally(() => setLoadingModels(false));
-    }
+    setModelsError(false);
+    setLoadingModels(true);
+    fetchModelsDetailed(settings.provider, key, settings.ollama_base_url)
+      .then((result) => {
+        setDynamicModels(result.models);
+        setModelsError(result.hadError);
+      })
+      .finally(() => setLoadingModels(false));
   }, [
     settings.provider,
     settings.anthropic_api_key,
     settings.openai_api_key,
     settings.openrouter_api_key,
+    settings.ollama_api_key,
+    settings.ollama_base_url,
   ]);
 
   const handleClose = async () => {
@@ -44,6 +51,7 @@ export function SettingsModal() {
   const getApiKey = () => {
     if (settings.provider === "anthropic") return settings.anthropic_api_key;
     if (settings.provider === "openrouter") return settings.openrouter_api_key;
+    if (settings.provider === "ollama") return settings.ollama_api_key;
     return settings.openai_api_key;
   };
 
@@ -52,6 +60,8 @@ export function SettingsModal() {
       updateSettings({ anthropic_api_key: value });
     else if (settings.provider === "openrouter")
       updateSettings({ openrouter_api_key: value });
+    else if (settings.provider === "ollama")
+      updateSettings({ ollama_api_key: value });
     else updateSettings({ openai_api_key: value });
   };
 
@@ -60,6 +70,8 @@ export function SettingsModal() {
       ? "sk-ant-..."
       : settings.provider === "openrouter"
         ? "sk-or-..."
+        : settings.provider === "ollama"
+          ? "Optional (leave empty for local Ollama)"
         : "sk-...";
 
   const filteredModels = useMemo(() => {
@@ -118,6 +130,7 @@ export function SettingsModal() {
           <div>
             <label className="block text-xs font-medium text-zinc-400 mb-1.5">
               {PROVIDERS.find((p) => p.id === settings.provider)?.label} API Key
+              {settings.provider === "ollama" ? " (Optional)" : ""}
             </label>
             <div className="relative">
               <input
@@ -140,6 +153,23 @@ export function SettingsModal() {
               </button>
             </div>
           </div>
+
+          {settings.provider === "ollama" && (
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+                Ollama URL
+              </label>
+              <input
+                type="text"
+                value={settings.ollama_base_url}
+                onChange={(e) =>
+                  updateSettings({ ollama_base_url: e.target.value })
+                }
+                placeholder="http://127.0.0.1:11434"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-700"
+              />
+            </div>
+          )}
 
           {/* Model — scrollable list */}
           <div>
@@ -166,9 +196,9 @@ export function SettingsModal() {
                 <div className="px-3 py-4 text-xs text-zinc-500 text-center">
                   {loadingModels
                     ? "Loading models..."
-                    : getApiKey()
-                      ? "No models found"
-                      : "Enter API key to load models"}
+                    : modelsError
+                      ? "Network issue, check your API key or routing"
+                      : "No models found"}
                 </div>
               ) : (
                 filteredModels.map((m) => (

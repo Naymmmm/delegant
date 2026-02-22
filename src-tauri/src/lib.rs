@@ -88,6 +88,7 @@ pub fn run() {
             commands::agent::stop_agent,
             commands::settings::get_settings,
             commands::settings::save_settings,
+            commands::settings::list_ollama_models,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

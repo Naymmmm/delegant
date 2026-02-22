@@ -18,6 +18,8 @@ const defaultSettings: Settings = {
   anthropic_api_key: "",
   openai_api_key: "",
   openrouter_api_key: "",
+  ollama_api_key: "",
+  ollama_base_url: "http://127.0.0.1:11434",
   provider: "anthropic",
   model: "claude-sonnet-4-6",
   display_width: 1280,
@@ -41,7 +43,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         // Migration: auto-mark setup_complete if any API key is already set
         if (
           !merged.setup_complete &&
-          (merged.anthropic_api_key || merged.openai_api_key || merged.openrouter_api_key)
+          (merged.anthropic_api_key ||
+            merged.openai_api_key ||
+            merged.openrouter_api_key ||
+            merged.ollama_api_key)
         ) {
           merged.setup_complete = true;
         }

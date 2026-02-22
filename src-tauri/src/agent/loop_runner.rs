@@ -9,6 +9,7 @@ use crate::agent::action::{execute_action, parse_computer_action, AgentAction};
 use crate::agent::history::trim_history;
 use crate::agent::tools::build_tool_definitions;
 use crate::ai::anthropic::AnthropicClient;
+use crate::ai::ollama::OllamaClient;
 use crate::ai::openai::OpenAiClient;
 use crate::ai::openrouter::OpenRouterClient;
 use crate::ai::types::{AiResponse, ContentBlock, ImageSource, Message};
@@ -93,6 +94,11 @@ pub async fn run_agent_loop(
                     }
                     "openrouter" => {
                         let client = OpenRouterClient::new(&s.openrouter_api_key, &s.model);
+                        client.send(SYSTEM_PROMPT, &messages, &tools).await
+                    }
+                    "ollama" => {
+                        let client =
+                            OllamaClient::new(&s.ollama_api_key, &s.model, &s.ollama_base_url);
                         client.send(SYSTEM_PROMPT, &messages, &tools).await
                     }
                     _ => {

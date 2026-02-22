@@ -14,7 +14,7 @@ import {
 import { clsx } from "clsx";
 import { commands } from "../lib/commands";
 import { shrinkToTaskbar } from "../lib/windowManager";
-import { PROVIDERS, MODELS, fetchModels } from "../lib/types";
+import { PROVIDERS, MODELS, fetchModelsDetailed } from "../lib/types";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useAgentStore } from "../stores/agentStore";
 import { useUIStore } from "../stores/uiStore";
@@ -27,6 +27,7 @@ export function StartScreen() {
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [modelSearch, setModelSearch] = useState("");
   const [loadingModels, setLoadingModels] = useState(false);
+  const [modelsError, setModelsError] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
   const { settings, updateSettings, saveSettings, showModal, setShowModal } =
     useSettingsStore();
@@ -43,19 +44,25 @@ export function StartScreen() {
         ? settings.anthropic_api_key
         : settings.provider === "openrouter"
           ? settings.openrouter_api_key
-          : settings.openai_api_key;
-    setDynamicModels(MODELS[settings.provider] ?? []);
-    if (key) {
-      setLoadingModels(true);
-      fetchModels(settings.provider, key)
-        .then(setDynamicModels)
-        .finally(() => setLoadingModels(false));
-    }
+          : settings.provider === "ollama"
+            ? settings.ollama_api_key
+            : settings.openai_api_key;
+    setDynamicModels([]);
+    setModelsError(false);
+    setLoadingModels(true);
+    fetchModelsDetailed(settings.provider, key, settings.ollama_base_url)
+      .then((result) => {
+        setDynamicModels(result.models);
+        setModelsError(result.hadError);
+      })
+      .finally(() => setLoadingModels(false));
   }, [
     settings.provider,
     settings.anthropic_api_key,
     settings.openai_api_key,
     settings.openrouter_api_key,
+    settings.ollama_api_key,
+    settings.ollama_base_url,
   ]);
 
   // Close picker on outside click
@@ -91,9 +98,11 @@ export function StartScreen() {
         ? settings.anthropic_api_key
         : settings.provider === "openrouter"
           ? settings.openrouter_api_key
-          : settings.openai_api_key;
+          : settings.provider === "ollama"
+            ? settings.ollama_api_key
+            : settings.openai_api_key;
 
-    if (!apiKey) {
+    if (!apiKey && settings.provider !== "ollama") {
       addToast("Please set your API key in settings first.", "error");
       setShowModal(true);
       return;
@@ -210,7 +219,11 @@ export function StartScreen() {
               <div className="max-h-64 overflow-y-auto">
                 {filteredModels.length === 0 ? (
                   <div className="px-3 py-4 text-xs text-zinc-500 text-center">
-                    No models found
+                    {loadingModels
+                      ? "Loading models..."
+                      : modelsError
+                        ? "Network issue, check your API key or routing"
+                        : "No models found"}
                   </div>
                 ) : (
                   filteredModels.map((m) => (

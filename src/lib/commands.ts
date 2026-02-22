@@ -2,6 +2,12 @@ import { invoke } from "@tauri-apps/api/core";
 import type { Settings, CaptureResult, ShellResult, WindowInfo } from "./types";
 
 export const commands = {
+  listOllamaModels: (baseUrl: string, apiKey?: string) =>
+    invoke<{ id: string; label: string }[]>("list_ollama_models", {
+      baseUrl,
+      apiKey: apiKey ?? null,
+    }),
+
   takeScreenshot: () => invoke<CaptureResult>("take_screenshot"),
 
   mouseMove: (x: number, y: number) => invoke("mouse_move", { x, y }),

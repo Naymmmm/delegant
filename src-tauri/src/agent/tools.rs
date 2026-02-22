@@ -11,6 +11,7 @@ pub fn build_tool_definitions(
         "anthropic" => build_anthropic_tools(display_width, display_height),
         "openai" => build_openai_tools(display_width, display_height),
         "openrouter" => build_openai_tools(display_width, display_height),
+        "ollama" => build_openai_tools(display_width, display_height),
         _ => build_anthropic_tools(display_width, display_height),
     }
 }

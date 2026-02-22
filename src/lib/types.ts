@@ -1,3 +1,5 @@
+import { commands } from "./commands";
+
 export type UIMode = "start" | "taskbar";
 
 export type AgentStatus = "idle" | "running" | "paused" | "error";
@@ -6,6 +8,8 @@ export interface Settings {
   anthropic_api_key: string;
   openai_api_key: string;
   openrouter_api_key: string;
+  ollama_api_key: string;
+  ollama_base_url: string;
   provider: string;
   model: string;
   display_width: number;
@@ -43,10 +47,16 @@ export interface WindowInfo {
   title: string;
 }
 
+export interface ModelFetchResult {
+  models: { id: string; label: string }[];
+  hadError: boolean;
+}
+
 export const PROVIDERS = [
   { id: "anthropic", label: "Anthropic" },
   { id: "openai", label: "OpenAI" },
   { id: "openrouter", label: "OpenRouter" },
+  { id: "ollama", label: "Ollama" },
 ] as const;
 
 /** Fallback static model lists */
@@ -74,27 +84,49 @@ export const MODELS: Record<string, { id: string; label: string }[]> = {
     { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
     { id: "meta-llama/llama-4-maverick", label: "Llama 4 Maverick" },
   ],
+  ollama: [
+    { id: "llama3.2:latest", label: "Llama 3.2" },
+    { id: "qwen2.5:latest", label: "Qwen 2.5" },
+    { id: "phi4:latest", label: "Phi-4" },
+  ],
 };
 
-/** Fetch models dynamically for any provider. Falls back to static list. */
+/** Fetch models dynamically for any provider. */
 export async function fetchModels(
   provider: string,
-  apiKey: string
+  apiKey: string,
+  ollamaBaseUrl?: string
 ): Promise<{ id: string; label: string }[]> {
-  if (!apiKey) return MODELS[provider] ?? [];
+  const result = await fetchModelsDetailed(provider, apiKey, ollamaBaseUrl);
+  return result.models;
+}
+
+export async function fetchModelsDetailed(
+  provider: string,
+  apiKey: string,
+  ollamaBaseUrl?: string
+): Promise<ModelFetchResult> {
+  if (!apiKey && provider !== "ollama") {
+    return { models: [], hadError: true };
+  }
 
   try {
     if (provider === "anthropic") {
-      return await fetchAnthropicModels(apiKey);
+      return { models: await fetchAnthropicModels(apiKey), hadError: false };
     } else if (provider === "openai") {
-      return await fetchOpenAIModels(apiKey);
+      return { models: await fetchOpenAIModels(apiKey), hadError: false };
     } else if (provider === "openrouter") {
-      return await fetchOpenRouterModels(apiKey);
+      return { models: await fetchOpenRouterModels(apiKey), hadError: false };
+    } else if (provider === "ollama") {
+      return {
+        models: await fetchOllamaModels(ollamaBaseUrl, apiKey),
+        hadError: false,
+      };
     }
   } catch {
-    // Fall back to static
+    return { models: [], hadError: true };
   }
-  return MODELS[provider] ?? [];
+  return { models: [], hadError: true };
 }
 
 async function fetchAnthropicModels(
@@ -106,7 +138,7 @@ async function fetchAnthropicModels(
       "anthropic-version": "2023-06-01",
     },
   });
-  if (!res.ok) return MODELS.anthropic;
+  if (!res.ok) throw new Error(`Anthropic model fetch failed: ${res.status}`);
   const data = await res.json();
   const models = (data.data ?? [])
     .sort(
@@ -117,7 +149,7 @@ async function fetchAnthropicModels(
       id: m.id,
       label: m.display_name ?? m.id,
     }));
-  return models.length > 0 ? models : MODELS.anthropic;
+  return models;
 }
 
 async function fetchOpenAIModels(
@@ -126,7 +158,7 @@ async function fetchOpenAIModels(
   const res = await fetch("https://api.openai.com/v1/models", {
     headers: { Authorization: `Bearer ${apiKey}` },
   });
-  if (!res.ok) return MODELS.openai;
+  if (!res.ok) throw new Error(`OpenAI model fetch failed: ${res.status}`);
   const data = await res.json();
   const models = (data.data ?? [])
     .sort(
@@ -137,7 +169,7 @@ async function fetchOpenAIModels(
       id: m.id,
       label: m.id,
     }));
-  return models.length > 0 ? models : MODELS.openai;
+  return models;
 }
 
 async function fetchOpenRouterModels(
@@ -146,7 +178,7 @@ async function fetchOpenRouterModels(
   const res = await fetch("https://openrouter.ai/api/v1/models", {
     headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
   });
-  if (!res.ok) return MODELS.openrouter;
+  if (!res.ok) throw new Error(`OpenRouter model fetch failed: ${res.status}`);
   const data = await res.json();
   const models = (data.data ?? [])
     .sort(
@@ -157,5 +189,33 @@ async function fetchOpenRouterModels(
       id: m.id,
       label: m.name ?? m.id,
     }));
-  return models.length > 0 ? models : MODELS.openrouter;
+  return models;
+}
+
+async function fetchOllamaModels(
+  baseUrl?: string,
+  apiKey?: string
+): Promise<{ id: string; label: string }[]> {
+  return commands.listOllamaModels(
+    normalizeOllamaBaseUrl(baseUrl),
+    apiKey?.trim() || undefined,
+  );
+}
+
+function normalizeOllamaBaseUrl(baseUrl?: string): string {
+  const raw = (baseUrl ?? "").trim();
+  let url =
+    raw.length === 0
+      ? "http://127.0.0.1:11434"
+      : raw.startsWith("http://") || raw.startsWith("https://")
+        ? raw
+        : `http://${raw}`;
+
+  url = url.replace(/\/+$/, "");
+  if (url.endsWith("/v1")) {
+    url = url.slice(0, -3);
+  }
+  url = url.replace(/\/+$/, "");
+
+  return url;
 }
